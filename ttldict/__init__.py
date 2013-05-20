@@ -1,7 +1,6 @@
 """
 TTL dictionary
 
-Umm... key specific TTLs?
 How to give default to __init__ nicely? Maybe drop the support for *args, **kwargs -> update() passing...?
 """
 
@@ -14,7 +13,6 @@ class TTLDict(MutableMapping):
     """ Dictionary with ttl """
     def __init__(self, *args, **kwargs):
         self._default_ttl = None
-        # combine to same internal store and store tuples?
         self._values = {}
         self.update(*args, **kwargs)
         self._lock = RLock()

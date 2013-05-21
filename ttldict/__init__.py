@@ -7,6 +7,7 @@ Tricks / features:
 """
 
 __all__ = ['TTLDict']
+__version__ = '0.0.4'
 
 from collections import MutableMapping
 from threading import RLock

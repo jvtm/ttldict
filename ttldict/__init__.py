@@ -1,8 +1,12 @@
 """
 TTL dictionary
 
-How to give default to __init__ nicely? Maybe drop the support for *args, **kwargs -> update() passing...?
+Tricks / features:
+ - calling len() will remove expired keys
+ - __repr__() might show expired values, doesn't remove expired ones
 """
+
+__all__ = ['TTLDict']
 
 from collections import MutableMapping
 from threading import RLock
@@ -10,41 +14,40 @@ import time
 
 
 class TTLDict(MutableMapping):
-    """ Dictionary with ttl """
-    def __init__(self, *args, **kwargs):
-        self._default_ttl = None
+    """
+    Dictionary with TTL
+    Extra args and kwargs are passed to initial .update() call
+    """
+    def __init__(self, default_ttl, *args, **kwargs):
+        self._default_ttl = default_ttl
         self._values = {}
-        self.update(*args, **kwargs)
         self._lock = RLock()
+        self.update(*args, **kwargs)
 
     def __repr__(self):
         return '<TTLDict@%#08x; ttl=%r, v=%r;>' % (id(self), self._default_ttl, self._values)
 
-    def set_default_ttl(self, ttl):
-        """ Set TTL """
-        self._default_ttl = ttl
-
     def set_ttl(self, key, ttl, now=None):
-        # pass the now to all extra functions or to none at all...
+        """ Set TTL for the given key """
         if now is None:
             now = time.time()
         with self._lock:
             _expire, value = self._values[key]
             self._values[key] = (now + ttl, value)
 
-    def expire_in(self, key, seconds):
-        pass
+    def get_ttl(self, key, now=None):
+        """ Return remaining TTL for a key """
+        if now is None:
+            now = time.time()
+        with self._lock:
+            expire, _value = self._values[key]
+            return expire - now
 
     def expire_at(self, key, timestamp):
-        pass
-
-    def expire_all_at(self, timestamp):
-        pass
-
-    def expire_all_in(self, timestamp):
-        pass
-
-    # extend, shorten lifes?
+        """ Set the key expire timestamp """
+        with self._lock:
+            _expire, value = self._values[key]
+            self._values[key] = (timestamp, value)
 
     def is_expired(self, key, now=None, remove=False):
         """ Check if key has expired """
@@ -87,17 +90,3 @@ class TTLDict(MutableMapping):
         with self._lock:
             self.is_expired(key, remove=True)
             return self._values[key]
-
-
-if __name__ == '__main__':
-    testdict = TTLDict()
-    testdict.set_default_ttl(4)
-    for i in range(10):
-        testdict['key%03d' % i] = time.ctime()
-        time.sleep(1)
-        print len(testdict), testdict
-    while len(testdict):
-        print len(testdict), testdict
-        time.sleep(1)
-
-    #testdict['bogus']

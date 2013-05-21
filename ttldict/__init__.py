@@ -90,4 +90,4 @@ class TTLDict(MutableMapping):
     def __getitem__(self, key):
         with self._lock:
             self.is_expired(key, remove=True)
-            return self._values[key]
+            return self._values[key][1]
